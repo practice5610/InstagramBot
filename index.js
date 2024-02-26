@@ -15,7 +15,7 @@ let message ="";
         else
         {
           console.log("couldn't load cookies.. loging and creating new cookies : ");
-          await ig.login("YourUserName", "YourPassowrd");
+          await ig.login("testuser12name", "03176836874Asimali@");
           await ig.save_cookies();
         }
         await ig.followFollwersOfAUser(600, 40000, "kingtemaki");
