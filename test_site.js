@@ -5,12 +5,7 @@ const pathTofile = require("path").join(__dirname, "link.txt");
 const fs = require("fs");
 const cookiesFilePath = require("path").join(__dirname, "cookies.json");
 // var stream = fs.createWriteStream(pathTofile);
-function generateRandomOTP() {
-  const otpLength = 6;
-  return Array.from({ length: otpLength }, () =>
-    Math.floor(Math.random() * 10)
-  ).join("");
-}
+
 const TAG_URL = (tag) => {
   return "https://www.test_sitecom/explore/tags/" + tag + "/";
 };
@@ -18,14 +13,8 @@ const mainObj = {
   browser: null,
   page: null,
   initialize: async () => {
-    // Launch browser
-    const pathToExtension = require("path").join(__dirname, "my-extension");
     mainObj.browser = await puppeteer.launch({
       headless: false,
-      args: [
-        `--disable-extensions-except=${pathToExtension}`,
-        `--load-extension=${pathToExtension}`,
-      ],
     });
 
     // Open new page
