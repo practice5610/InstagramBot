@@ -1,13 +1,13 @@
 const puppeteer = require("puppeteer"); ////*
-const Login_URL = "http://localhost:3004/login";
-const Home_URL = "https://www.test_sitecom/";
+const Login_URL = "https://www.instagram.com/accounts/login/";
+const Home_URL = "https://www.instagram.com/";
 const pathTofile = require("path").join(__dirname, "link.txt");
 const fs = require("fs");
 const cookiesFilePath = require("path").join(__dirname, "cookies.json");
 // var stream = fs.createWriteStream(pathTofile);
 
 const TAG_URL = (tag) => {
-  return "https://www.test_sitecom/explore/tags/" + tag + "/";
+  return "https://www.test_site.com/explore/tags/" + tag + "/";
 };
 const mainObj = {
   browser: null,
@@ -21,11 +21,40 @@ const mainObj = {
     mainObj.page = await mainObj.browser.newPage();
 
     // Navigate to the login URL
-    await mainObj.page.goto(Login_URL);
+    await mainObj.page.goto(Login_URL, {
+      waitUntil: "networkidle2",
+    });
+    const contentDimensions = await mainObj.page.evaluate(() => {
+      const body = document.body;
+      const html = document.documentElement;
+
+      const height = Math.max(
+        body.scrollHeight,
+        body.offsetHeight,
+        html.clientHeight,
+        html.scrollHeight,
+        html.offsetHeight
+      );
+      const width = Math.max(
+        body.scrollWidth,
+        body.offsetWidth,
+        html.clientWidth,
+        html.scrollWidth,
+        html.offsetWidth
+      );
+
+      return { width, height };
+    });
+    await mainObj.page.setViewport({
+      width: contentDimensions.width,
+      height: contentDimensions.height,
+    });
   },
   save_cookies: async () => {
-    const cookiesObject = await test_sitepage.cookies();
+    const cookiesObject = await mainObj.page.cookies();
     var data = JSON.stringify(cookiesObject);
+    console.log("started saving sessiong");
+
     await fs.writeFile(
       cookiesFilePath,
       data,
@@ -40,10 +69,32 @@ const mainObj = {
       }
     );
   },
+  turn_on_notifications: async () => {
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    // Wait for 5 seconds before logging in successfully
+    await delay(8000);
+    const notificationDivSelector = "div._a9-z";
+    const notNowButtonSelector = "button._a9--._ap36._a9_1";
+
+    // Wait for the notification div to be present
+    await mainObj.page.waitForSelector(notificationDivSelector);
+
+    // Check if the "Not Now" button is present in the notification div
+    const notNowButton = await mainObj.page.$(notNowButtonSelector);
+
+    if (notNowButton) {
+      // Click the "Not Now" button if it's present
+      await notNowButton.click();
+      console.log("Clicked on 'Not Now' button");
+    } else {
+      console.log("No 'Not Now' button found");
+    }
+  },
   load_cookies: async () => {
     let cb = async function (_cookies) {
       try {
-        await test_sitepage.setCookie(_cookies);
+        await mainObj.page.setCookie(_cookies);
       } catch (error) {
         console.log("could not inject cookies : " + error);
         return false;
@@ -59,71 +110,55 @@ const mainObj = {
     let cookies = JSON.parse(data);
     for (var i = 0, len = cookies.length; i < len; i++) await cb(cookies[i]);
     try {
-      await test_sitepage.goto(Home_URL, {
+      await mainObj.page.goto(Home_URL, {
         waitUntil: "networkidle2",
       });
     } catch (error) {
       console.log("could not go to home url" + error);
     }
-    try {
-      LoginButton = await test_sitepage.$x(
-        '//*[@id="react-root"]/section/main/article/div/div/div/div[2]/button'
-      );
-      if (LoginButton[0]) return false;
-      else return true;
-    } catch (error) {
-      return false;
-    }
+    return true;
+    // try {
+    //   LoginButton = await mainObj.page.$x(
+    //     '//*[@id="react-root"]/section/main/article/div/div/div/div[2]/button'
+    //   );
+    //   if (LoginButton[0]) return false;
+    //   else return true;
+    // } catch (error) {
+    //   return false;
+    // }
   },
-  login: async (phone) => {
-    try {
-      // Wait for the phone input field to be available
-      await mainObj.page.waitForSelector("#phone");
+  login: async (username, password) => {
+    await mainObj.page.waitForSelector('button[type="submit"]');
+    await mainObj.page.type('input[name="username"]', username);
 
-      // Type the phone number into the input field
-      await mainObj.page.type("#phone", phone);
+    // Type the password into the password input field
+    await mainObj.page.type('input[name="password"]', password);
 
-      await mainObj.page.click(".btn-primary");
-      console.log("OTP SENT");
-      await mainObj.page.waitForNavigation({ timeout: 5000 });
-      await mainObj.page.waitForSelector(".py-6"); // Ensure the OTP container is present
+    // Assuming your login button has a selector 'button[type="submit"]'
+    await mainObj.page.click('button[type="submit"]');
+    await mainObj.page.waitForSelector("button._acan._acap._acas._aj1-._ap30");
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-      const otpInputs = await mainObj.page.$$(".py-6 input.form-control");
-      console.log("otp input", otpInputs.length);
-
-      for (let i = 0; i < otpInputs.length; i++) {
-        const randomDigit = Math.floor(Math.random() * 10);
-
-        try {
-          await otpInputs[i].focus();
-          await otpInputs[i].click();
-          await otpInputs[i].type(randomDigit.toString());
-        } catch (error) {
-          console.error("Error typing into field", i + 1, ":", error);
-        }
-      }
-      const verifyButton = await mainObj.page.$(".btn-primary.text-uppercase");
-      await verifyButton.click();
-    } catch (error) {
-      console.error("Error during login:", error);
-    }
+    // Wait for 5 seconds before logging in successfully
+    await delay(10000);
+    console.log("Login successful!");
   },
   extract_users: async (message, followingURL) => {
-    await test_sitepage.goto(followingURL, {
+    await test_site.page.goto(followingURL, {
       waitUntil: "networkidle2",
     });
-    await test_sitepage.waitFor(1000);
-    Appbutton = await test_sitepage.$x(
+    await test_site.page.waitFor(1000);
+    Appbutton = await test_site.page.$x(
       '//*[@id="react-root"]/section/main/div/header/section/div[1]/div/button'
     );
     await Appbutton[0].click();
-    Applaunch = await test_sitepage.$x("/html/body/div[3]/div/div[2]");
+    Applaunch = await test_site.page.$x("/html/body/div[3]/div/div[2]");
     const newPagePromise = new Promise((x) =>
-      test_sitebrowser.once("targetcreated", (target) => x(target.page()))
+      test_site.browser.once("targetcreated", (target) => x(target.page()))
     ); // declare promise
-    await test_sitepage.waitFor(2000);
+    await test_site.page.waitFor(2000);
     await Applaunch[0].click();
-    await test_sitepage.waitFor(2000);
+    await test_site.page.waitFor(2000);
     const popup = await newPagePromise; // declare new tab /window,
     await popup.waitFor(3000);
     NoButton = await popup.$x("/html/body/div[3]/div/div/div[3]/button[2]");
@@ -175,7 +210,7 @@ const mainObj = {
         return el.textContent;
       }, users[i]);
 
-      let link = "www.test_sitecom/" + user;
+      let link = "www.test_site.com/" + user;
 
       try {
         fd = fs.openSync(pathTofile, "a");
@@ -218,41 +253,41 @@ const mainObj = {
     msgsNumber
   ) => {
     try {
-      await test_sitepage.waitForXPath(
+      await test_site.page.waitForXPath(
         '//*[@id="react-root"]/section/nav[2]/div/div/div[2]/div/div/div[5]/a/span'
       );
-      MyProfilButton = await test_sitepage.$x(
+      MyProfilButton = await test_site.page.$x(
         '//*[@id="react-root"]/section/nav[2]/div/div/div[2]/div/div/div[5]/a/span'
       );
       await MyProfilButton[0].click();
-      await test_sitepage.waitFor(1000);
+      await test_site.page.waitFor(1000);
     } catch (error) {
       console.log("profile Button : " + error);
     }
     try {
-      await test_sitepage.waitForXPath(
+      await test_site.page.waitForXPath(
         '//*[@id="react-root"]/section/main/div/header/section/div[2]/div/button'
       );
-      Appbutton = await test_sitepage.$x(
+      Appbutton = await test_site.page.$x(
         '//*[@id="react-root"]/section/main/div/header/section/div[2]/div/button'
       );
       await Appbutton[0].click();
     } catch (error) {
       console.log("App button : " + error);
     }
-    await test_sitepage.waitForXPath("/html/body/div[3]/div/div[2]/a");
-    Applaunch = await test_sitepage.$x("/html/body/div[3]/div/div[2]/a");
+    await test_site.page.waitForXPath("/html/body/div[3]/div/div[2]/a");
+    Applaunch = await test_site.page.$x("/html/body/div[3]/div/div[2]/a");
     const newPagePromise = new Promise((x) =>
-      test_sitebrowser.once("targetcreated", (target) => x(target.page()))
+      test_site.browser.once("targetcreated", (target) => x(target.page()))
     ); // declare promise
     try {
-      await test_sitepage.waitFor(2000);
+      await test_site.page.waitFor(2000);
       await Applaunch[0].click();
     } catch (error) {
       console.log("popup : " + error);
     }
 
-    await test_sitepage.waitFor(2000);
+    await test_site.page.waitFor(2000);
     const popup = await newPagePromise; // the popup opened now we controlling it
     try {
       await popup.waitForXPath("/html/body/div[3]/div/div/div[3]/button[2]");
@@ -412,40 +447,40 @@ const mainObj = {
     }
   },
   followFollwersOfAUser: async (numberToFollow, delay, user) => {
-    await test_sitepage.goto("https://www.test_sitecom/" + user + "/", {
+    await test_site.page.goto("https://www.test_site.com/" + user + "/", {
       waitUntil: "networkidle2",
     });
     try {
-      await test_sitepage.waitForXPath(
+      await test_site.page.waitForXPath(
         '//*[@id="react-root"]/section/main/div/ul/li[2]/a/span'
       );
-      followersButton = await test_sitepage.$x(
+      followersButton = await test_site.page.$x(
         '//*[@id="react-root"]/section/main/div/ul/li[2]/a/span'
       );
       followersButton[0].click();
     } catch (error) {
       console.log("followers button : " + error);
     }
-    await test_sitepage.waitForXPath(
+    await test_site.page.waitForXPath(
       '//*[@id="react-root"]/section/main/div[2]/ul/div/li[10]/div/div[2]/button'
     );
-    await test_sitepage.waitFor(2000);
-    //followButtons = await test_sitepage.$x('//*[@id="react-root"]/section/main/div[2]/ul/div/li/div/div[2]/button');
+    await test_site.page.waitFor(2000);
+    //followButtons = await test_site.page.$x('//*[@id="react-root"]/section/main/div[2]/ul/div/li/div/div[2]/button');
     //let end = followButtons.length;
     for (i = 1; i < numberToFollow; i = i + Math.floor(Math.random() * 5)) {
-      followButton = await test_sitepage.$x(
+      followButton = await test_site.page.$x(
         '//*[@id="react-root"]/section/main/div[2]/ul/div/li[' +
           i +
           "]/div/div[2]/button"
       );
-      let text = await test_sitepage.evaluate((el) => {
+      let text = await test_site.page.evaluate((el) => {
         // do what you want with featureArticle in page.evaluate
         return el.textContent;
       }, followButton[0]);
       if (text == "Follow") {
         await followButton[0].click();
-        await test_sitepage.waitFor(Math.floor(Math.random() * 6) * 1000);
-        await test_sitepage.waitFor(delay);
+        await test_site.page.waitFor(Math.floor(Math.random() * 6) * 1000);
+        await test_site.page.waitFor(delay);
       }
     }
   },
