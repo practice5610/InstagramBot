@@ -1,11 +1,16 @@
 const puppeteer = require("puppeteer"); ////*
-const Login_URL = "http://localhost:3004/";
+const Login_URL = "http://localhost:3004/login";
 const Home_URL = "https://www.test_sitecom/";
 const pathTofile = require("path").join(__dirname, "link.txt");
 const fs = require("fs");
 const cookiesFilePath = require("path").join(__dirname, "cookies.json");
 // var stream = fs.createWriteStream(pathTofile);
-
+function generateRandomOTP() {
+  const otpLength = 6;
+  return Array.from({ length: otpLength }, () =>
+    Math.floor(Math.random() * 10)
+  ).join("");
+}
 const TAG_URL = (tag) => {
   return "https://www.test_sitecom/explore/tags/" + tag + "/";
 };
@@ -13,26 +18,21 @@ const mainObj = {
   browser: null,
   page: null,
   initialize: async () => {
-    const pathToExtension = require("path").join(__dirname, "extenstion");
-    console.log(pathToExtension);
-    test_sitebrowser = await puppeteer.launch({
-      //ignoreDefaultArgs: true,
+    // Launch browser
+    const pathToExtension = require("path").join(__dirname, "my-extension");
+    mainObj.browser = await puppeteer.launch({
       headless: false,
       args: [
         `--disable-extensions-except=${pathToExtension}`,
         `--load-extension=${pathToExtension}`,
-        "--start-maximized",
       ],
     });
-    test_sitepage = await test_sitebrowser.newPage();
-    await test_sitepage.setUserAgent(
-      "Mozilla/5.0 (Linux; Android 9; SM-G960F Build/PPR1.180610.011; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/74.0.3729.157 Mobile Safari/537.36"
-    );
 
-    await test_sitepage.setViewport({
-      width: null,
-      height: null,
-    });
+    // Open new page
+    mainObj.page = await mainObj.browser.newPage();
+
+    // Navigate to the login URL
+    await mainObj.page.goto(Login_URL);
   },
   save_cookies: async () => {
     const cookiesObject = await test_sitepage.cookies();
@@ -86,10 +86,38 @@ const mainObj = {
       return false;
     }
   },
-  login: async (username, password) => {
-    await test_sitepage.goto(Login_URL, {
-      waitUntil: "networkidle2",
-    });
+  login: async (phone) => {
+    try {
+      // Wait for the phone input field to be available
+      await mainObj.page.waitForSelector("#phone");
+
+      // Type the phone number into the input field
+      await mainObj.page.type("#phone", phone);
+
+      await mainObj.page.click(".btn-primary");
+      console.log("OTP SENT");
+      await mainObj.page.waitForNavigation({ timeout: 5000 });
+      await mainObj.page.waitForSelector(".py-6"); // Ensure the OTP container is present
+
+      const otpInputs = await mainObj.page.$$(".py-6 input.form-control");
+      console.log("otp input", otpInputs.length);
+
+      for (let i = 0; i < otpInputs.length; i++) {
+        const randomDigit = Math.floor(Math.random() * 10);
+
+        try {
+          await otpInputs[i].focus();
+          await otpInputs[i].click();
+          await otpInputs[i].type(randomDigit.toString());
+        } catch (error) {
+          console.error("Error typing into field", i + 1, ":", error);
+        }
+      }
+      const verifyButton = await mainObj.page.$(".btn-primary.text-uppercase");
+      await verifyButton.click();
+    } catch (error) {
+      console.error("Error during login:", error);
+    }
   },
   extract_users: async (message, followingURL) => {
     await test_sitepage.goto(followingURL, {
