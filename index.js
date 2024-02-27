@@ -16,7 +16,8 @@ let message = "";
     await site.login("testuser12name", "03176836874Asimali@");
     await site.save_cookies();
   }
-  await site.followFollwersOfAUser(600, 40000, "kingtemaki");
+  // await site.followFollwersOfAUser(600, 40000, "kingtemaki");
+  await site.sendMessageToUser("kingtemaki", "hello there ");
 
   debugger;
 })();

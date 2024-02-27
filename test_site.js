@@ -18,11 +18,11 @@ const mainObj = {
     });
 
     mainObj.page = await mainObj.browser.newPage();
-    await mainObj.page.setViewport({
-      width: 1580, // Replace with your desired width
-      height: 1080, // Replace with your desired height
-      deviceScaleFactor: 1,
-    });
+    // await mainObj.page.setViewport({
+    //   width: 1580, // Replace with your desired width
+    //   height: 1280, // Replace with your desired height
+    //   deviceScaleFactor: 1,
+    // });
 
     await mainObj.page.goto(Login_URL, {
       waitUntil: "networkidle2",
@@ -429,8 +429,6 @@ const mainObj = {
       waitUntil: "networkidle2",
     });
     await mainObj.page.waitForSelector("div._ap3a._aaco._aacw._aad6._aade");
-
-    // Get the text content of the div inside the button
     const buttonText = await mainObj.page.$eval(
       "div._ap3a._aaco._aacw._aad6._aade",
       (div) => div.textContent
@@ -448,9 +446,40 @@ const mainObj = {
       console.log(`Unexpected button state: ${buttonText}`);
     }
   },
-  sendMessageToUser: async (numberToFollow, delay, user) => {
+  sendMessageToUser: async (user, message) => {
+    await mainObj.page.goto(Home_URL + user + "/");
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-    
+    // Wait for 5 seconds before logging in successfully
+    await delay(20000);
+    const messageButtonSelector =
+      ".x1i10hfl.xjqpnuy.xa49m3k.xqeqjp1.x2hbi6w.x972fbf.xcfux6l.x1qhh985.xm0m39n.xdl72j9.x2lah0s.xe8uvvx.xdj266r.x11i5rnm.xat24cr.x1mh8g0r.x2lwn1j.xeuugli.xexx8yu.x18d9i69.x1hl2dhg.xggy1nq.x1ja2u2z.x1t137rt.x1q0g3np.x1lku1pv.x1a2a7pz.x6s0dn4.xjyslct.x1lq5wgf.xgqcy7u.x30kzoy.x9jhf4c.x1ejq31n.xd10rxx.x1sy0etr.x17r0tee.x9f619.x1ypdohk.x78zum5.x1f6kntn.xwhw2v2.x10w6t97.xl56j7k.x17ydfre.x1swvt13.x1pi30zi.x1n2onr6.x2b8uid.xlyipyv.x87ps6o.x14atkfc.xcdnw81.x1i0vuye.x1gjpkn9.x5n08af.xsz8vos";
+
+    await mainObj.page.waitForSelector(messageButtonSelector, {
+      visible: true,
+    });
+
+    // Click the message button
+    await mainObj.page.click(messageButtonSelector);
+    await mainObj.page.waitForNavigation({ waitUntil: "networkidle2" });
+
+    // Wait for 5 seconds before logging in successfully
+    await delay(10000);
+    const messageInputSelector = 'div[aria-label="Message"]';
+    console.log("message typing...");
+    await mainObj.page.type(messageInputSelector, message, {
+      delay: 50,
+    });
+
+    const sendButtonSelector =
+      'div.x1i10hfl.xjqpnuy.xa49m3k.xqeqjp1.x2hbi6w.xdl72j9.x2lah0s.xe8uvvx.xdj266r.xat24cr.x1mh8g0r.x2lwn1j.xeuugli.x1hl2dhg.xggy1nq.x1ja2u2z.x1t137rt.x1q0g3np.x1lku1pv.x1a2a7pz.x6s0dn4.xjyslct.x1ejq31n.xd10rxx.x1sy0etr.x17r0tee.x9f619.x1ypdohk.x1f6kntn.xwhw2v2.xl56j7k.x17ydfre.x2b8uid.xlyipyv.x87ps6o.x14atkfc.xcdnw81.x1i0vuye.xjbqb8w.xm3z3ea.x1x8b98j.x131883w.x16mih1h.x972fbf.xcfux6l.x1qhh985.xm0m39n.xt0psk2.xt7dq6l.xexx8yu.x4uap5.x18d9i69.xkhd6sd.x1n2onr6.x1n5bzlp.x173jzuc.x1yc6y37.xfs2ol5[role="button"][tabindex="0"]';
+    await mainObj.page.click(sendButtonSelector);
+    console.log("message sent");
+
+    // Wait for navigation or any other required event
+    await mainObj.page.waitForNavigation({ waitUntil: "networkidle2" });
+
+    // Click the "Send" button
   },
 };
 module.exports = mainObj;
