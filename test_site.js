@@ -481,5 +481,34 @@ const mainObj = {
 
     // Click the "Send" button
   },
+  getFollowersFollowingPosts: async (user) => {
+    await mainObj.page.goto(Home_URL + user + "/");
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    await delay(5000);
+
+    await mainObj.page.waitForSelector(".x78zum5"); // Wait for the specific class to ensure the content is loaded
+    const data = await mainObj.page.evaluate(() => {
+      const postsElement = document.querySelector(
+        ".xl565be:nth-child(1) ._ac2a .x11i5rnm"
+      );
+      const followersElement = document.querySelector(
+        ".xl565be:nth-child(2) ._ac2a .x11i5rnm"
+      );
+      const followingElement = document.querySelector(
+        ".xl565be:nth-child(3) ._ac2a .x11i5rnm"
+      );
+
+      const posts = postsElement ? postsElement.innerText : "0";
+      const followers = followersElement ? followersElement.innerText : "0";
+      const following = followingElement ? followingElement.innerText : "0";
+
+      return { posts, followers, following };
+    });
+
+    console.log(`User: ${user}`);
+    console.log(`Posts: ${data.posts}`);
+    console.log(`Followers: ${data.followers}`);
+    console.log(`Following: ${data.following}`);
+  },
 };
 module.exports = mainObj;

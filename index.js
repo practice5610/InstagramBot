@@ -17,7 +17,9 @@ let message = "";
     await site.save_cookies();
   }
   // await site.followFollwersOfAUser(600, 40000, "kingtemaki");
-  await site.sendMessageToUser("kingtemaki", "hello there ");
+  // await site.sendMessageToUser("kingtemaki", "hello there ");
+
+  await site.getFollowersFollowingPosts("kingtemaki");
 
   debugger;
 })();
