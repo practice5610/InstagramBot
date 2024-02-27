@@ -17,37 +17,15 @@ const mainObj = {
       headless: false,
     });
 
-    // Open new page
     mainObj.page = await mainObj.browser.newPage();
+    await mainObj.page.setViewport({
+      width: 1580, // Replace with your desired width
+      height: 1080, // Replace with your desired height
+      deviceScaleFactor: 1,
+    });
 
-    // Navigate to the login URL
     await mainObj.page.goto(Login_URL, {
       waitUntil: "networkidle2",
-    });
-    const contentDimensions = await mainObj.page.evaluate(() => {
-      const body = document.body;
-      const html = document.documentElement;
-
-      const height = Math.max(
-        body.scrollHeight,
-        body.offsetHeight,
-        html.clientHeight,
-        html.scrollHeight,
-        html.offsetHeight
-      );
-      const width = Math.max(
-        body.scrollWidth,
-        body.offsetWidth,
-        html.clientWidth,
-        html.scrollWidth,
-        html.offsetWidth
-      );
-
-      return { width, height };
-    });
-    await mainObj.page.setViewport({
-      width: contentDimensions.width,
-      height: contentDimensions.height,
     });
   },
   save_cookies: async () => {
@@ -447,42 +425,32 @@ const mainObj = {
     }
   },
   followFollwersOfAUser: async (numberToFollow, delay, user) => {
-    await test_site.page.goto("https://www.test_site.com/" + user + "/", {
+    await mainObj.page.goto("https://www.instagram.com/" + user + "/", {
       waitUntil: "networkidle2",
     });
-    try {
-      await test_site.page.waitForXPath(
-        '//*[@id="react-root"]/section/main/div/ul/li[2]/a/span'
-      );
-      followersButton = await test_site.page.$x(
-        '//*[@id="react-root"]/section/main/div/ul/li[2]/a/span'
-      );
-      followersButton[0].click();
-    } catch (error) {
-      console.log("followers button : " + error);
-    }
-    await test_site.page.waitForXPath(
-      '//*[@id="react-root"]/section/main/div[2]/ul/div/li[10]/div/div[2]/button'
+    await mainObj.page.waitForSelector("div._ap3a._aaco._aacw._aad6._aade");
+
+    // Get the text content of the div inside the button
+    const buttonText = await mainObj.page.$eval(
+      "div._ap3a._aaco._aacw._aad6._aade",
+      (div) => div.textContent
     );
-    await test_site.page.waitFor(2000);
-    //followButtons = await test_site.page.$x('//*[@id="react-root"]/section/main/div[2]/ul/div/li/div/div[2]/button');
-    //let end = followButtons.length;
-    for (i = 1; i < numberToFollow; i = i + Math.floor(Math.random() * 5)) {
-      followButton = await test_site.page.$x(
-        '//*[@id="react-root"]/section/main/div[2]/ul/div/li[' +
-          i +
-          "]/div/div[2]/button"
-      );
-      let text = await test_site.page.evaluate((el) => {
-        // do what you want with featureArticle in page.evaluate
-        return el.textContent;
-      }, followButton[0]);
-      if (text == "Follow") {
-        await followButton[0].click();
-        await test_site.page.waitFor(Math.floor(Math.random() * 6) * 1000);
-        await test_site.page.waitFor(delay);
-      }
+
+    if (buttonText === "Follow") {
+      // Click the Follow button
+      await mainObj.page.click("div._ap3a._aaco._aacw._aad6._aade");
+      console.log(`${user} followed successfully`);
+    } else if (buttonText === "Requested") {
+      console.log(`${user} has already been requested`);
+    } else if (buttonText === "Following") {
+      console.log(`${user} is already being followed`);
+    } else {
+      console.log(`Unexpected button state: ${buttonText}`);
     }
+  },
+  sendMessageToUser: async (numberToFollow, delay, user) => {
+
+    
   },
 };
 module.exports = mainObj;
